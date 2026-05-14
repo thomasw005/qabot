@@ -3,7 +3,6 @@ require('dotenv').config()
 const fs = require('fs')
 const path = require('path')
 const mineflayer = require('mineflayer')
-const { authenticator } = require('@otplib/preset-default')
 const {
   Client,
   GatewayIntentBits,
@@ -15,42 +14,11 @@ const discord = new Client({
 })
 
 let mcBot = null
-let pendingTotpSecret = null
-let sentTotp = false
 let currentStatus = 'Offline'
 let currentLobby = null
 let currentVersion = null
 let botChannel = null
 let autoDisconnectTimer = null
-
-function saveTotpSecret(secret) {
-  const envPath = path.join(__dirname, '.env')
-  let content = fs.readFileSync(envPath, 'utf8')
-  if (content.includes('TOTP_SECRET=')) {
-    content = content.replace(/^TOTP_SECRET=.*$/m, `TOTP_SECRET=${secret}`)
-  } else {
-    content = content.trimEnd() + `\nTOTP_SECRET=${secret}\n`
-  }
-  fs.writeFileSync(envPath, content)
-  process.env.TOTP_SECRET = secret
-}
-
-function sendTotpCode(bot) {
-  const secret = pendingTotpSecret || process.env.TOTP_SECRET
-  if (!secret) return
-
-  setTimeout(() => {
-    if (mcBot !== bot) return
-    try {
-      const code = authenticator.generate(secret)
-      bot.chat(code)
-      sentTotp = true
-      log('TOTP code sent.')
-    } catch (err) {
-      log(`TOTP ERROR: ${err.message}`)
-    }
-  }, 1000)
-}
 
 function log(message) {
   console.log(message)
@@ -91,8 +59,6 @@ function disconnectMcBot() {
 function createMcBot({ host, lobby, version }) {
   disconnectMcBot()
 
-  pendingTotpSecret = null
-  sentTotp = false
   currentStatus = `Connecting to ${host} ${version}`
   currentLobby = lobby
   currentVersion = version
@@ -104,7 +70,7 @@ function createMcBot({ host, lobby, version }) {
     port: 25565,
     username: process.env.MC_USERNAME,
     auth: process.env.MC_AUTH || 'microsoft',
-    version
+    version,
   })
 
   mcBot = bot
@@ -119,43 +85,35 @@ function createMcBot({ host, lobby, version }) {
       disconnectMcBot()
     }, 2 * 60 * 60 * 1000)
 
-    setTimeout(() => {
-      if (mcBot !== bot) return
-      moveForwardFor(1000)
-    }, 15000)
+    // setTimeout(() => {
+    //   if (mcBot !== bot) return
+    //   moveForwardFor(1000)
+    // }, 15000)
 
-    setTimeout(() => {
-      if (mcBot !== bot) return
+    moveForwardFor(1000)
 
-      log(`Sending /server ${lobby}`)
+    // setTimeout(() => {
+    //   if (mcBot !== bot) return
+
+    //   log(`Sending /server ${lobby}`)
+    //   bot.chat(`/server ${lobby}`)
+
+    //   setTimeout(() => {
+    //     moveForwardFor(1000)
+    //   }, 2000)
+    // }, 17000)
+
+    log(`Sending /server ${lobby}`)
       bot.chat(`/server ${lobby}`)
 
       setTimeout(() => {
         moveForwardFor(1000)
       }, 2000)
-    }, 17000)
   })
 
   bot.on('messagestr', msg => {
     if (mcBot !== bot) return
     console.log('RAW:', msg)
-
-    const secretMatch = msg.match(/Your TOTP Secret:\s*([A-Z2-7]+)/i)
-
-    if (secretMatch) {
-      pendingTotpSecret = secretMatch[1].trim()
-      sentTotp = false
-      saveTotpSecret(pendingTotpSecret)
-      log('Detected and saved Mineplex TOTP secret. Sending generated code...')
-      sendTotpCode(bot)
-      return
-    }
-
-    if (msg.includes('Type your 6-digit authenticator code in chat to continue.')) {
-      sentTotp = false
-      log('TOTP prompt detected. Sending code from saved secret...')
-      sendTotpCode(bot)
-    }
   })
 
   bot.on('kicked', reason => {
@@ -202,7 +160,7 @@ discord.on(Events.InteractionCreate, async interaction => {
     if (interaction.commandName === 'summon') {
       const host = interaction.options.getString('server')
       const lobby = interaction.options.getString('lobby')
-      const version = interaction.options.getString('version') || false
+      const version = interaction.options.getString('version') || '1.8.9'
 
       await interaction.reply(`Summoning QA bot to \`${host}\`, then sending \`/server ${lobby}\`.`)
 

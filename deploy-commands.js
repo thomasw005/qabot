@@ -27,7 +27,7 @@ const commands = [
     .addStringOption(option =>
       option
         .setName('version')
-        .setDescription('Minecraft version (default: 1.8.9)')
+        .setDescription('Minecraft version')
         .setRequired(false)
     ),
 
