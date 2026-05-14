@@ -119,7 +119,10 @@ function createMcBot({ host, lobby, version }) {
       disconnectMcBot()
     }, 2 * 60 * 60 * 1000)
 
-    moveForwardFor(5000)
+    setTimeout(() => {
+      if (mcBot !== bot) return
+      moveForwardFor(1000)
+    }, 15000)
 
     setTimeout(() => {
       if (mcBot !== bot) return
@@ -128,9 +131,9 @@ function createMcBot({ host, lobby, version }) {
       bot.chat(`/server ${lobby}`)
 
       setTimeout(() => {
-        moveForwardFor(5000)
+        moveForwardFor(1000)
       }, 2000)
-    }, 2000)
+    }, 17000)
   })
 
   bot.on('messagestr', msg => {
@@ -199,7 +202,7 @@ discord.on(Events.InteractionCreate, async interaction => {
     if (interaction.commandName === 'summon') {
       const host = interaction.options.getString('server')
       const lobby = interaction.options.getString('lobby')
-      const version = interaction.options.getString('version') || '1.8.9'
+      const version = interaction.options.getString('version') || false
 
       await interaction.reply(`Summoning QA bot to \`${host}\`, then sending \`/server ${lobby}\`.`)
 
