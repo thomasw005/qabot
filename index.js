@@ -71,6 +71,7 @@ function createMcBot({ host, lobby, version }) {
     username: process.env.MC_USERNAME,
     auth: process.env.MC_AUTH || 'microsoft',
     version,
+    physicsEnabled: false
   })
 
   mcBot = bot
@@ -85,36 +86,17 @@ function createMcBot({ host, lobby, version }) {
       disconnectMcBot()
     }, 2 * 60 * 60 * 1000)
 
-    // setTimeout(() => {
-    //   if (mcBot !== bot) return
-    //   moveForwardFor(1000)
-    // }, 15000)
-
-    moveForwardFor(1000)
-
-    // setTimeout(() => {
-    //   if (mcBot !== bot) return
-
-    //   log(`Sending /server ${lobby}`)
-    //   bot.chat(`/server ${lobby}`)
-
-    //   setTimeout(() => {
-    //     moveForwardFor(1000)
-    //   }, 2000)
-    // }, 17000)
-
-    log(`Sending /server ${lobby}`)
-      bot.chat(`/server ${lobby}`)
-
-      setTimeout(() => {
-        moveForwardFor(1000)
-      }, 2000)
+    setTimeout(() => {
+      if (mcBot !== bot) return
+      log(`Sending /server ${lobby}`)
+        bot.chat(`/server ${lobby}`)
+    }, 1000)
   })
 
-  bot.on('messagestr', msg => {
-    if (mcBot !== bot) return
-    console.log('RAW:', msg)
-  })
+  // bot.on('messagestr', msg => {
+  //   if (mcBot !== bot) return
+  //   console.log('RAW:', msg)
+  // })
 
   bot.on('kicked', reason => {
     if (mcBot !== bot) return
@@ -160,7 +142,7 @@ discord.on(Events.InteractionCreate, async interaction => {
     if (interaction.commandName === 'summon') {
       const host = interaction.options.getString('server')
       const lobby = interaction.options.getString('lobby')
-      const version = interaction.options.getString('version') || '1.8.9'
+      const version = interaction.options.getString('version') || false
 
       await interaction.reply(`Summoning QA bot to \`${host}\`, then sending \`/server ${lobby}\`.`)
 
